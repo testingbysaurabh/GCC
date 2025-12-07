@@ -1,15 +1,16 @@
-require("dotenv").config()
-const express = require("express")
-const app = express()
-const mongoose = require("mongoose")
-const cors = require("cors")
-const { OtpRouter } = require("./src/routes/OtpRoutes")
-const { AuthRoutes } = require("./src/routes/AuthRoutes")
-const { Post } = require("./src/models/Posts")
-const cookieParser = require("cookie-parser")
-const { PostRoutes } = require("./src/routes/PostRoutes")
+// Vercel Serverless Function Entry Point
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const { OtpRouter } = require("../src/routes/OtpRoutes");
+const { AuthRoutes } = require("../src/routes/AuthRoutes");
+const { PostRoutes } = require("../src/routes/PostRoutes");
 
-// Middleware - CORS configuration for Vercel
+const app = express();
+
+// CORS configuration for Vercel
 const allowedOrigins = process.env.ORIGIN 
     ? process.env.ORIGIN.split(',').map(origin => origin.trim())
     : ['http://localhost:5173', 'http://localhost:3000'];
@@ -34,26 +35,30 @@ app.use(cors({
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}))
-app.use(express.json())
+}));
+
+app.use(express.json());
 app.use(cookieParser());
 
 // Routes
-app.use("/api", OtpRouter)
-app.use("/api", AuthRoutes)
-app.use("/api", PostRoutes)
+app.use("/api", OtpRouter);
+app.use("/api", AuthRoutes);
+app.use("/api", PostRoutes);
 
+// Health check endpoint
+app.get("/api/health", (req, res) => {
+    res.status(200).json({ status: "OK", message: "Server is running" });
+});
 
 // Database connection
-mongoose.connect(process.env.MONGO_URL).then(() => {
-    console.log("GCC db Connect ")
-}).catch(() => {
-    console.log("DB Connection fail")
-})
+mongoose.connect(process.env.MONGO_URL)
+    .then(() => {
+        console.log("GCC db Connect");
+    })
+    .catch((err) => {
+        console.log("DB Connection fail:", err.message);
+    });
 
-
-// Server 
-app.listen(process.env.PORT, () => {
-    console.log(`SERVER connected Succesful ${process.env.PORT}`)
-})
+// Export for Vercel serverless functions
+module.exports = app;
 

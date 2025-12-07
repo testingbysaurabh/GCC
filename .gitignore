@@ -3,3 +3,5 @@ node_modules/
 dist/
 .env
 node_modules
+DEPLOYMENT_GUIDE.md
+VERCEL_SETUP_SUMMARY.md

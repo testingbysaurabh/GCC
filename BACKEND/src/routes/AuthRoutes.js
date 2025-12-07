@@ -59,11 +59,14 @@ router.post('/admin/login', async (req, res) => {
 
         const token = jwt.sign({ _id: foundUser._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
+        // Cookie settings for Vercel (cross-origin)
+        const isProduction = process.env.NODE_ENV === 'production';
         res.cookie('token', token, {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24,
-            sameSite: 'lax'
-            // secure: true // Uncomment for HTTPS jab karunga yaad se
+            sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin on Vercel
+            secure: isProduction, // true for HTTPS (required with sameSite: 'none')
+            domain: isProduction ? undefined : undefined // Let browser set domain automatically
         });
 
         res.status(200).json({
@@ -85,7 +88,12 @@ router.post('/admin/login', async (req, res) => {
 
 // Logout route //
 router.post('/admin/logout', isLoggedIn, (req, res) => {
-    res.clearCookie('token').json({ msg: 'User logged out' });
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.clearCookie('token', {
+        httpOnly: true,
+        sameSite: isProduction ? 'none' : 'lax',
+        secure: isProduction
+    }).json({ msg: 'User logged out' });
 });
 
 
