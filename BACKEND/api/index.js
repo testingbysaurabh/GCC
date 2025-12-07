@@ -50,15 +50,40 @@ app.get("/api/health", (req, res) => {
     res.status(200).json({ status: "OK", message: "Server is running" });
 });
 
-// Database connection
-mongoose.connect(process.env.MONGO_URL)
+// Root route
+app.get("/", (req, res) => {
+    res.status(200).json({ status: "OK", message: "Backend API is running" });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error("Error:", err);
+    res.status(err.status || 500).json({
+        error: err.message || "Internal server error",
+        ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: "Route not found" });
+});
+
+// Database connection - optimized for serverless
+// Connection is cached between function invocations in Vercel
+if (!mongoose.connection.readyState) {
+    mongoose.connect(process.env.MONGO_URL, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+    })
     .then(() => {
         console.log("GCC db Connect");
     })
     .catch((err) => {
-        console.log("DB Connection fail:", err.message);
+        console.error("DB Connection fail:", err.message);
     });
+}
 
-// Export for Vercel serverless functions
+// Export Express app for Vercel
 module.exports = app;
 
